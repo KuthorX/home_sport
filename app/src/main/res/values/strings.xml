@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">居家运动</string>
+    <string name="plan_summary">低冲击有氧 + 4 项力量 · 约 43 分钟</string>
+    <string name="status_ready">准备开始</string>
+    <string name="status_paused">已暂停</string>
+    <string name="status_rest">组间休息</string>
+    <string name="status_training">正在训练</string>
+    <string name="status_complete">训练完成</string>
+    <string name="todays_workout">今日完整训练</string>
+    <string name="default_duration">42:45</string>
+    <string name="ready_progress">低冲击有氧 20 组 · 力量 12 组</string>
+    <string name="ready_guide">跟随中文语音完成动作、倒计时与组间休息。保持能正常说话的强度。</string>
+    <string name="start_workout">开始训练</string>
+    <string name="pause_workout">暂停训练</string>
+    <string name="resume_workout">继续训练</string>
+    <string name="repeat_workout">再练一次</string>
+    <string name="skip_step">跳过本段</string>
+    <string name="stop_workout">结束训练</string>
+    <string name="todays_exercises">今日动作</string>
+    <string name="plan_details">低冲击开合跳 20 分钟\n双脚交替侧点，手臂同步上举，不跳起、不砸地。\n\n靠墙静蹲 3 × 30 秒\n背贴墙，膝盖朝脚尖方向，量力下蹲。\n\n深蹲 3 × 12 次\n臀部向后坐，背部保持自然直立。\n\n跪姿俯卧撑 3 × 10 次\n身体从膝到头保持直线，肘部斜向后。\n\n平板支撑 3 × 25 秒\n收紧腹部，肩、髋、脚跟尽量成直线。</string>
+    <string name="safety_note">运动中胸闷、头晕或明显不适，请立即停止。保持低冲击，以能正常说话为宜。</string>
+    <string name="rest_progress">休息 %1$d / %2$d</string>
+    <string name="set_progress">第 %1$d / %2$d 组</string>
+    <string name="set_progress_reps">第 %1$d / %2$d 组 · %3$d 次</string>
+    <string name="complete_title">做得很好</string>
+    <string name="complete_word">完成</string>
+    <string name="complete_summary">今日有氧与力量训练已完成</string>
+    <string name="cool_down_guide">缓慢走动并补充水分，让心率逐渐恢复。</string>
+</resources>
