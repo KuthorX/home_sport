@@ -18,6 +18,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.居家运动">
         <activity
+            android:name=".HistoryActivity"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize"
             android:exported="true"

@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#176B4D</color>
-    <color name="primary_dark">#0D4934</color>
-    <color name="primary_soft">#DDF2E9</color>
-    <color name="accent">#F2B544</color>
-    <color name="surface">#FFFFFF</color>
-    <color name="background">#F5F7F6</color>
-    <color name="text_primary">#15211C</color>
-    <color name="text_secondary">#5A6962</color>
-    <color name="outline">#D8E0DC</color>
-    <color name="danger">#A13D3D</color>
+    <color name="primary">#19C8B9</color>
+    <color name="primary_dark">#11A89B</color>
+    <color name="primary_soft">#E6F9F6</color>
+    <color name="accent">#FFCC00</color>
+    <color name="surface">#FFFDF7</color>
+    <color name="background">#F8F8F0</color>
+    <color name="content_background">#F7F3DF</color>
+    <color name="text_primary">#794F27</color>
+    <color name="text_secondary">#725D42</color>
+    <color name="text_muted">#9F927D</color>
+    <color name="outline">#C4B89E</color>
+    <color name="button_shadow">#BDAEA0</color>
+    <color name="danger">#E05A5A</color>
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>
 </resources>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true">
@@ -13,14 +14,41 @@
         android:paddingEnd="20dp"
         android:paddingBottom="28dp">
 
-        <TextView
-            android:id="@+id/appTitle"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/app_name"
-            android:textColor="@color/text_primary"
-            android:textSize="28sp"
-            android:textStyle="bold" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginEnd="10dp"
+                android:importantForAccessibility="no"
+                android:src="@mipmap/ic_launcher" />
+
+            <TextView
+                android:id="@+id/appTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="sans-serif-rounded"
+                android:text="@string/app_name"
+                android:textColor="@color/text_primary"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/historyButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:text="@string/checkin_calendar"
+                android:textAllCaps="false"
+                android:textColor="@color/primary_dark"
+                app:icon="@drawable/ic_calendar"
+                app:iconTint="@color/primary_dark" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/planSummary"
@@ -110,12 +138,22 @@
                 android:textSize="15sp" />
         </LinearLayout>
 
-        <com.google.android.material.button.MaterialButton
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/primaryButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="64dp"
             android:layout_marginTop="20dp"
-            android:text="@string/start_workout" />
+            android:background="@drawable/button_primary"
+            android:elevation="0dp"
+            android:fontFamily="sans-serif-rounded"
+            android:paddingBottom="8dp"
+            android:text="@string/start_workout"
+            android:textAllCaps="false"
+            android:textColor="@color/text_primary"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:stateListAnimator="@null"
+            app:backgroundTint="@null" />
 
         <LinearLayout
             android:id="@+id/secondaryActions"
@@ -132,7 +170,8 @@
                 android:layout_height="56dp"
                 android:layout_weight="1"
                 android:text="@string/skip_step"
-                android:textAllCaps="false" />
+                android:textAllCaps="false"
+                app:cornerRadius="50dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/stopButton"
@@ -171,7 +210,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:background="@color/primary_soft"
+            android:background="@drawable/safety_panel"
             android:lineSpacingExtra="3dp"
             android:padding="16dp"
             android:text="@string/safety_note"
