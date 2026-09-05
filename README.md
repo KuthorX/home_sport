@@ -4,7 +4,7 @@
 Text-to-Speech 提供免费中文语音播报，不依赖付费语音服务。
 
 <p align="center">
-  <img src="branding/home-sport-logo.svg" width="120" alt="Home Sport Logo" />
+  <img src="branding/home-sport-logo.png" width="120" alt="Home Sport Logo" />
 </p>
 
 ## 功能
@@ -39,5 +39,4 @@ TTS 语音数据。
 
 ## Logo
 
-`branding/home-sport-logo.svg` 及对应 Android launcher icon 是本项目原创素材，按
-[CC0 1.0 Universal](branding/LOGO-LICENSE.md) 释放，可自由商用、修改与再分发。
+当前 Logo 图片由项目所有者提供，详见 [Logo 说明](branding/LOGO-NOTICE.md)。
