@@ -1,5 +1,9 @@
 <resources>
     <string name="app_name">居家运动</string>
+    <string name="workout_notification_channel">训练倒计时</string>
+    <string name="workout_notification_channel_description">训练进行时显示动作和剩余时间</string>
+    <string name="workout_notification_paused">训练已暂停</string>
+    <string name="workout_notification_complete">训练完成</string>
     <string name="plan_summary">低冲击有氧 + 4 项力量 · 约 43 分钟</string>
     <string name="status_ready">准备开始</string>
     <string name="status_paused">已暂停</string>

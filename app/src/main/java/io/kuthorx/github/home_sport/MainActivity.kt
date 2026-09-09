@@ -1,72 +1,33 @@
 package io.kuthorx.github.home_sport
 
+import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.SystemClock
-import android.speech.tts.TextToSpeech
 import android.view.View
 import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import java.time.LocalDate
 import java.util.Locale
 
-class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
-    private val timer = Handler(Looper.getMainLooper())
-    private val tick = object : Runnable {
-        override fun run() {
-            val active = engine ?: return
-            if (active.isPaused || active.isComplete) return
-
-            val now = SystemClock.elapsedRealtime()
-            val elapsedSeconds = ((now - lastTickAtMillis) / 1_000L).toInt()
-            if (elapsedSeconds == 0) {
-                timer.postDelayed(this, 1_000L - (now - lastTickAtMillis))
-                return
-            }
-
-            val previous = active.currentStep()
-            repeat(elapsedSeconds) {
-                if (active.isComplete) return@repeat
-                val completed = active.currentStep() ?: return@repeat
-                active.tick()
-                if (completed !== active.currentStep()) {
-                    store.completeStepAndSave(active, completed, LocalDate.now())
-                }
-            }
-            store.saveProgress(active, false)
-            lastTickAtMillis += elapsedSeconds * 1_000L
-            renderWorkout()
-
-            if (active.isComplete) {
-                finishWorkout(true)
-                return
-            }
-            if (previous !== active.currentStep()) announceCurrentStep()
-            else announceCountdown(active.secondsRemaining)
-
-            val delay = maxOf(
-                50L,
-                1_000L - (SystemClock.elapsedRealtime() - lastTickAtMillis),
-            )
-            timer.postDelayed(this, delay)
-        }
-    }
-
+class MainActivity : AppCompatActivity() {
     private lateinit var plan: WorkoutPlan
     private var engine: WorkoutEngine? = null
     private lateinit var store: WorkoutStore
-    private var tts: TextToSpeech? = null
-    private var ttsReady = false
-    private var pendingSpeech: String? = null
-    private var lastTickAtMillis = 0L
+    private var listeningForUpdates = false
+    private val workoutUpdates = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) = refreshWorkout()
+    }
 
     private lateinit var phaseLabel: TextView
     private lateinit var exerciseName: TextView
@@ -93,7 +54,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         plan = WorkoutPlan.daily()
         store = WorkoutStore(this)
-        tts = TextToSpeech(this, this)
+        requestNotificationPermission()
         primaryButton.setOnClickListener { onPrimaryAction() }
         findViewById<View>(R.id.skipButton).setOnClickListener { skipStep() }
         findViewById<View>(R.id.stopButton).setOnClickListener { confirmStop() }
@@ -132,31 +93,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun showRestoredProgress() {
         val restored = engine ?: return
         if (restored.isComplete) {
-            finishWorkout(false)
+            finishWorkout()
         } else {
-            restored.pause()
-            store.saveProgress(restored, true)
             secondaryActions.visibility = View.VISIBLE
             renderWorkout()
-        }
-    }
-
-    override fun onInit(status: Int) {
-        val speech = tts ?: return
-        if (status != TextToSpeech.SUCCESS) {
-            showTtsUnavailable()
-            return
-        }
-        val result = speech.setLanguage(Locale.SIMPLIFIED_CHINESE)
-        ttsReady = result != TextToSpeech.LANG_MISSING_DATA &&
-            result != TextToSpeech.LANG_NOT_SUPPORTED
-        speech.setSpeechRate(0.95f)
-        if (ttsReady && pendingSpeech != null) {
-            speech.speak(pendingSpeech, TextToSpeech.QUEUE_FLUSH, null, "workout-ready")
-            pendingSpeech = null
-        } else if (!ttsReady) {
-            pendingSpeech = null
-            showTtsUnavailable()
+            if (!restored.isPaused) {
+                WorkoutService.resume(this)
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
         }
     }
 
@@ -166,13 +110,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             active == null || active.isComplete -> startWorkout()
             active.isPaused -> {
                 active.resume()
-                store.saveProgress(active, false)
+                store.saveProgress(active, true)
+                WorkoutService.resume(this)
                 primaryButton.setText(R.string.pause_workout)
-                speak("继续训练", TextToSpeech.QUEUE_FLUSH)
-                startTimer()
                 window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             }
-            else -> pauseWorkout(true)
+            else -> pauseWorkout()
         }
         renderWorkout()
     }
@@ -183,39 +126,27 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         primaryButton.setText(R.string.pause_workout)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         renderWorkout()
-        announceCurrentStep("训练开始。全程保持低冲击，如有胸闷、头晕或明显不适，请立即停止。")
-        startTimer()
+        WorkoutService.start(this)
     }
 
-    private fun pauseWorkout(announce: Boolean) {
+    private fun pauseWorkout() {
         val active = engine ?: return
         if (active.isComplete || active.isPaused) return
         active.pause()
         store.saveProgress(active, true)
-        timer.removeCallbacks(tick)
-        tts?.stop()
+        WorkoutService.pause(this)
         primaryButton.setText(R.string.resume_workout)
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        if (announce) speak("训练已暂停", TextToSpeech.QUEUE_FLUSH)
     }
 
     private fun skipStep() {
         val active = engine ?: return
         if (active.isComplete) return
-        tts?.stop()
-        active.skip()
-        store.saveProgress(active, true)
-        renderWorkout()
-        if (active.isComplete) {
-            finishWorkout(true)
-        } else {
-            announceCurrentStep()
-            if (!active.isPaused) startTimer()
-        }
+        WorkoutService.skip(this)
     }
 
     private fun confirmStop() {
-        pauseWorkout(false)
+        pauseWorkout()
         MaterialAlertDialogBuilder(this)
             .setTitle("结束本次训练？")
             .setMessage("结束后会清除未完成进度，已经完成的动作仍保留在打卡记录。")
@@ -226,17 +157,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun resetWorkout() {
-        timer.removeCallbacks(tick)
-        tts?.stop()
-        pendingSpeech = null
+        WorkoutService.stop(this)
         store.clearProgress()
         engine = null
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         renderReady()
     }
 
-    private fun finishWorkout(announce: Boolean) {
-        timer.removeCallbacks(tick)
+    private fun finishWorkout() {
         store.clearProgress()
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val completedAll = (engine?.skippedSteps ?: 0) == 0
@@ -248,16 +176,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         progressBar.progress = 100
         primaryButton.setText(R.string.repeat_workout)
         secondaryActions.visibility = View.GONE
-        if (announce) {
-            speak(
-                if (completedAll) {
-                    "训练完成。缓慢走动并补充水分，让心率逐渐恢复。"
-                } else {
-                    "本次训练结束。实际完成的动作已经记录。"
-                },
-                TextToSpeech.QUEUE_FLUSH,
-            )
-        }
     }
 
     private fun renderReady() {
@@ -302,38 +220,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         )
     }
 
-    private fun announceCurrentStep(prefix: String = "") {
-        val step = engine?.currentStep() ?: return
-        if (step.phase == WorkoutStep.Phase.REST) {
-            speak(
-                "$prefix 休息。第${step.restNumber}次，共${step.totalRests}次。${step.durationSeconds}秒。",
-                TextToSpeech.QUEUE_FLUSH,
-            )
-            return
-        }
-        val target = if (step.repetitions > 0) {
-            "${step.repetitions}次，限时${step.durationSeconds}秒。"
-        } else {
-            "${step.durationSeconds}秒。"
-        }
-        speak(
-            "$prefix${step.name}。第${step.setNumber}组，共${step.totalSets}组。$target${step.description}",
-            TextToSpeech.QUEUE_FLUSH,
-        )
-    }
-
-    private fun announceCountdown(seconds: Int) {
-        if (seconds == 30 || seconds == 10 || seconds in 1..5) {
-            speak("${seconds}秒", TextToSpeech.QUEUE_FLUSH)
-        }
-    }
-
-    private fun startTimer() {
-        timer.removeCallbacks(tick)
-        lastTickAtMillis = SystemClock.elapsedRealtime()
-        timer.postDelayed(tick, 1_000L)
-    }
-
     private fun overallProgress(): Int {
         val active = engine ?: return 0
         var elapsed = 0
@@ -352,28 +238,37 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun formatTime(seconds: Int) =
         String.format(Locale.CHINA, "%02d:%02d", seconds / 60, seconds % 60)
 
-    private fun speak(text: String, queueMode: Int) {
-        if (ttsReady) {
-            tts?.speak(text, queueMode, null, "workout-${System.nanoTime()}")
-        } else {
-            pendingSpeech = if (queueMode == TextToSpeech.QUEUE_FLUSH || pendingSpeech == null) {
-                text
-            } else {
-                pendingSpeech + text
+    override fun onStart() {
+        super.onStart()
+        ContextCompat.registerReceiver(
+            this,
+            workoutUpdates,
+            IntentFilter(WorkoutService.ACTION_STATE_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        listeningForUpdates = true
+        refreshWorkout()
+    }
+
+    private fun refreshWorkout() {
+        engine = store.restoreProgress(plan)
+        val active = engine
+        when {
+            active == null -> renderReady()
+            active.isComplete -> finishWorkout()
+            else -> {
+                secondaryActions.visibility = View.VISIBLE
+                renderWorkout()
             }
         }
     }
 
-    private fun showTtsUnavailable() {
-        Toast.makeText(this, "系统未安装中文语音数据，训练计时仍可使用", Toast.LENGTH_LONG).show()
-    }
-
     override fun onStop() {
+        if (listeningForUpdates) {
+            unregisterReceiver(workoutUpdates)
+            listeningForUpdates = false
+        }
         super.onStop()
-        pauseWorkout(false)
-        tts?.stop()
-        pendingSpeech = null
-        renderWorkout()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -387,11 +282,18 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         super.onSaveInstanceState(outState)
     }
 
-    override fun onDestroy() {
-        timer.removeCallbacks(tick)
-        tts?.stop()
-        tts?.shutdown()
-        super.onDestroy()
+    private fun requestNotificationPermission() {
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                NOTIFICATION_PERMISSION_REQUEST,
+            )
+        }
     }
 
     companion object {
@@ -400,5 +302,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         private const val STATE_SECONDS = "seconds"
         private const val STATE_PAUSED = "paused"
         private const val STATE_COMPLETE = "complete"
+        private const val NOTIFICATION_PERMISSION_REQUEST = 100
     }
 }
