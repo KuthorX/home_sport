@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -37,7 +38,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var exerciseGuide: TextView
     private lateinit var planSummary: TextView
     private lateinit var planTitle: TextView
-    private lateinit var planDetails: TextView
+    private lateinit var planDetails: LinearLayout
     private lateinit var safetyNote: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var primaryButton: AppCompatButton
@@ -266,22 +267,61 @@ class MainActivity : AppCompatActivity() {
             WorkoutPlan.Mode.DAILY -> {
                 planSummary.setText(R.string.plan_summary)
                 planTitle.setText(R.string.todays_exercises)
-                planDetails.setText(R.string.plan_details)
+                renderPlanDetails(R.string.plan_details)
                 safetyNote.setText(R.string.safety_note)
             }
             WorkoutPlan.Mode.PIRIFORMIS -> {
                 planSummary.setText(R.string.piriformis_plan_summary)
                 planTitle.setText(R.string.piriformis_plan_title)
-                planDetails.setText(R.string.piriformis_plan_details)
+                renderPlanDetails(R.string.piriformis_plan_details)
                 safetyNote.setText(R.string.piriformis_safety_note)
             }
             WorkoutPlan.Mode.OFFICE -> {
                 planSummary.setText(R.string.office_plan_summary)
                 planTitle.setText(R.string.office_plan_title)
-                planDetails.setText(R.string.office_plan_details)
+                renderPlanDetails(R.string.office_plan_details)
                 safetyNote.setText(R.string.office_safety_note)
             }
         }
+    }
+
+    private fun renderPlanDetails(resourceId: Int) {
+        planDetails.removeAllViews()
+        getString(resourceId)
+            .split("\n\n")
+            .filter(String::isNotBlank)
+            .forEach { block ->
+                val lineBreak = block.indexOf('\n')
+                val title = if (lineBreak >= 0) block.substring(0, lineBreak) else block
+                val body = if (lineBreak >= 0) block.substring(lineBreak + 1) else ""
+                val card = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    background = ContextCompat.getDrawable(this@MainActivity, R.drawable.exercise_card)
+                    setPadding(dp(16), dp(14), dp(16), dp(14))
+                }
+                card.addView(TextView(this).apply {
+                    text = title
+                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.primary_dark))
+                    textSize = 16f
+                    setTypeface(Typeface.DEFAULT, Typeface.BOLD)
+                })
+                if (body.isNotBlank()) {
+                    card.addView(TextView(this).apply {
+                        text = body
+                        setTextColor(ContextCompat.getColor(this@MainActivity, R.color.text_secondary))
+                        textSize = 14f
+                        setLineSpacing(dp(3).toFloat(), 1f)
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        ).apply { topMargin = dp(6) }
+                    })
+                }
+                planDetails.addView(card, LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { bottomMargin = dp(10) })
+            }
     }
 
     private fun overallProgress(): Int {
@@ -298,6 +338,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun totalDurationSeconds() = plan.steps.sumOf { it.durationSeconds }
+
+    private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     private fun formatTime(seconds: Int) =
         String.format(Locale.CHINA, "%02d:%02d", seconds / 60, seconds % 60)

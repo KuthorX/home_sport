@@ -11,13 +11,13 @@ class HomeActivity : AppCompatActivity() {
         setContentView(R.layout.activity_home)
         SystemBars.useOpaqueStatusBar(this)
 
-        findViewById<View>(R.id.dailyEntryButton).setOnClickListener {
+        findViewById<View>(R.id.dailyEntryCard).setOnClickListener {
             openWorkout(WorkoutPlan.Mode.DAILY)
         }
-        findViewById<View>(R.id.piriformisEntryButton).setOnClickListener {
+        findViewById<View>(R.id.piriformisEntryCard).setOnClickListener {
             openWorkout(WorkoutPlan.Mode.PIRIFORMIS)
         }
-        findViewById<View>(R.id.officeEntryButton).setOnClickListener {
+        findViewById<View>(R.id.officeEntryCard).setOnClickListener {
             openWorkout(WorkoutPlan.Mode.OFFICE)
         }
         findViewById<View>(R.id.historyButton).setOnClickListener {

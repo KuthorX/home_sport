@@ -43,18 +43,26 @@
                 style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="48dp"
+                android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
                 android:text="@string/back_to_entries"
                 android:textAllCaps="false"
-                android:textColor="@color/primary_dark" />
+                android:textColor="@color/primary_dark"
+                android:textSize="14sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/historyButton"
                 style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="48dp"
-                android:text="@string/checkin_calendar"
+                android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:text="@string/history_short"
                 android:textAllCaps="false"
                 android:textColor="@color/primary_dark"
+                android:textSize="14sp"
                 app:icon="@drawable/ic_calendar"
                 app:iconTint="@color/primary_dark" />
         </LinearLayout>
@@ -63,20 +71,26 @@
             android:id="@+id/planSummary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/status_pill"
+            android:paddingStart="12dp"
+            android:paddingTop="5dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="5dp"
             android:text="@string/plan_summary"
-            android:textColor="@color/text_secondary"
-            android:textSize="15sp" />
+            android:textColor="@color/primary_dark"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
         <LinearLayout
             android:id="@+id/workoutPanel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="16dp"
             android:background="@drawable/workout_panel"
             android:gravity="center_horizontal"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="22dp">
 
             <TextView
                 android:id="@+id/phaseLabel"
@@ -99,8 +113,8 @@
                 android:layout_marginTop="20dp"
                 android:gravity="center"
                 android:text="@string/todays_workout"
-                android:textColor="@color/text_primary"
-                android:textSize="24sp"
+                android:textColor="@color/primary_dark"
+                android:textSize="22sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -111,7 +125,7 @@
                 android:minHeight="96dp"
                 android:text="@string/default_duration"
                 android:textColor="@color/primary_dark"
-                android:textSize="64sp"
+                android:textSize="56sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -128,7 +142,7 @@
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="match_parent"
                 android:layout_height="8dp"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="16dp"
                 android:indeterminate="false"
                 android:max="100"
                 android:progress="0"
@@ -139,26 +153,26 @@
                 android:id="@+id/exerciseGuide"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="16dp"
                 android:gravity="center"
-                android:lineSpacingExtra="3dp"
+                android:lineSpacingExtra="4dp"
                 android:text="@string/ready_guide"
                 android:textColor="@color/text_secondary"
-                android:textSize="15sp" />
+                android:textSize="14sp" />
         </LinearLayout>
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/primaryButton"
             android:layout_width="match_parent"
-            android:layout_height="64dp"
-            android:layout_marginTop="20dp"
+            android:layout_height="60dp"
+            android:layout_marginTop="16dp"
             android:background="@drawable/button_primary"
             android:elevation="0dp"
-            android:fontFamily="sans-serif-rounded"
-            android:paddingBottom="8dp"
+            android:fontFamily="sans-serif-medium"
+            android:padding="0dp"
             android:text="@string/start_workout"
             android:textAllCaps="false"
-            android:textColor="@color/text_primary"
+            android:textColor="@color/white"
             android:textSize="17sp"
             android:textStyle="bold"
             android:stateListAnimator="@null"
@@ -198,29 +212,26 @@
             android:id="@+id/planTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="24dp"
             android:text="@string/todays_exercises"
             android:textColor="@color/text_primary"
-            android:textSize="18sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
-        <TextView
+        <LinearLayout
             android:id="@+id/planDetails"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:lineSpacingExtra="6dp"
-            android:text="@string/plan_details"
-            android:textColor="@color/text_secondary"
-            android:textSize="15sp" />
+            android:orientation="vertical" />
 
         <TextView
             android:id="@+id/safetyNote"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="20dp"
             android:background="@drawable/safety_panel"
-            android:lineSpacingExtra="3dp"
+            android:lineSpacingExtra="4dp"
             android:padding="16dp"
             android:text="@string/safety_note"
             android:textColor="@color/primary_dark"
