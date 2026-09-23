@@ -89,6 +89,31 @@ class WorkoutEngineTest {
         }
     }
 
+    @Test
+    fun buildsDailyAndRehabPlansWithExpectedExercises() {
+        val piriformis = WorkoutPlan.piriformis()
+        assertEquals(WorkoutPlan.Mode.PIRIFORMIS, piriformis.mode)
+        assertEquals(
+            listOf("卧姿翘二郎腿拉伸", "猫狗式", "臀桥", "蚌式展开"),
+            piriformis.steps.filter { it.phase == WorkoutStep.Phase.EXERCISE }.map { it.name }.distinct(),
+        )
+        assertEquals(3, piriformis.steps.count { it.name == "臀桥" && it.phase == WorkoutStep.Phase.EXERCISE })
+        assertEquals(15, piriformis.steps.first { it.name == "臀桥" }.repetitions)
+
+        val office = WorkoutPlan.office()
+        assertEquals(WorkoutPlan.Mode.OFFICE, office.mode)
+        assertEquals(
+            listOf("坐姿猫牛式", "坐姿躯干扭转", "坐姿“4”字拉伸", "靠墙/靠背胸椎伸展"),
+            office.steps.filter { it.phase == WorkoutStep.Phase.EXERCISE }.map { it.name }.distinct(),
+        )
+        assertTrue(
+            office.steps
+                .filter { it.phase == WorkoutStep.Phase.EXERCISE }
+                .all { it.totalSets == 1 },
+        )
+        assertEquals(WorkoutPlan.Mode.DAILY, WorkoutPlan.daily().mode)
+    }
+
     private fun step(
         phase: WorkoutStep.Phase,
         seconds: Int,

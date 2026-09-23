@@ -3,6 +3,7 @@ package io.kuthorx.github.home_sport
 import android.content.Context
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -67,6 +68,18 @@ class WorkoutStoreTest {
 
         assertEquals(0, restored.skippedSteps)
         assertTrue(restored.isPaused)
+    }
+
+    @Test
+    fun keepsProgressBoundToSelectedWorkoutMode() {
+        val plan = WorkoutPlan.piriformis()
+        val engine = WorkoutEngine(plan)
+
+        store.saveProgress(engine, true, WorkoutPlan.Mode.PIRIFORMIS)
+
+        assertNotNull(store.restoreProgress(plan, WorkoutPlan.Mode.PIRIFORMIS))
+        assertNull(store.restoreProgress(WorkoutPlan.office(), WorkoutPlan.Mode.OFFICE))
+        assertEquals(WorkoutPlan.Mode.PIRIFORMIS, store.restoreMode())
     }
 
     @Test

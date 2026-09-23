@@ -1,5 +1,15 @@
 <resources>
     <string name="app_name">居家运动</string>
+    <string name="home_subtitle">按今天的状态，选择一套适合你的训练。</string>
+    <string name="choose_workout">选择训练入口</string>
+    <string name="daily_entry_title">日常运动</string>
+    <string name="daily_entry_description">低冲击有氧与基础力量，约 43 分钟</string>
+    <string name="piriformis_entry_title">梨状肌综合征康复运动</string>
+    <string name="piriformis_entry_description">放松臀腰、活动腰椎，逐步激活臀肌</string>
+    <string name="office_entry_title">办公室腰臀放松</string>
+    <string name="office_entry_description">坐在办公椅上完成，打破久坐固定姿势</string>
+    <string name="home_safety_note">康复动作请在无剧烈疼痛时进行。出现下肢无力、脚踝抬不起来、麻木范围扩大或大小便感觉异常，请立即停止并就医。</string>
+    <string name="back_to_entries">训练入口</string>
     <string name="workout_notification_channel">训练倒计时</string>
     <string name="workout_notification_channel_description">训练进行时显示动作和剩余时间</string>
     <string name="workout_notification_paused">训练已暂停</string>
@@ -24,6 +34,42 @@
     <string name="todays_exercises">今日动作</string>
     <string name="plan_details">低冲击开合跳 20 分钟\n双脚交替侧点，手臂同步上举，不跳起、不砸地。\n\n靠墙静蹲 3 × 30 秒\n背贴墙，膝盖朝脚尖方向，量力下蹲。\n\n深蹲 3 × 12 次\n臀部向后坐，背部保持自然直立。\n\n跪姿俯卧撑 3 × 10 次\n身体从膝到头保持直线，肘部斜向后。\n\n平板支撑 3 × 25 秒\n收紧腹部，肩、髋、脚跟尽量成直线。</string>
     <string name="safety_note">运动中胸闷、头晕或明显不适，请立即停止。保持低冲击，以能正常说话为宜。</string>
+    <string name="piriformis_workout">梨状肌康复训练</string>
+    <string name="office_workout">办公室腰臀放松</string>
+    <string name="piriformis_plan_summary">4 个动作 · 放松臀腰并激活臀肌 · 约 12 分钟</string>
+    <string name="office_plan_summary">4 个坐姿动作 · 每坐 1 小时做 1 组 · 约 5 分钟</string>
+    <string name="piriformis_ready_progress">拉伸、腰椎活动与臀肌激活 · 4 个动作</string>
+    <string name="office_ready_progress">坐姿放松 · 4 个动作</string>
+    <string name="piriformis_ready_guide">动作缓慢、呼吸平稳；只做到温和牵拉，不要硬扭或压迫麻木点。</string>
+    <string name="office_ready_guide">保持双脚踩地、骨盆稳定；每坐 45–60 分钟起身活动几分钟。</string>
+    <string name="piriformis_plan_title">康复动作</string>
+    <string name="office_plan_title">办公室动作</string>
+    <string name="piriformis_plan_details">卧姿翘二郎腿拉伸　3 × 30 秒
+右脚踝跨在左膝上，抱住左大腿后侧向胸口拉近，感受右臀深处温和拉伸。
+
+猫狗式　1 × 10 次
+四足跪姿，吸气抬头塌腰，呼气含胸拱背；动作缓慢顺畅。
+
+臀桥　3 × 15 次
+仰卧屈膝，收紧臀部和核心抬起骨盆，避免过度拱腰。
+
+蚌式展开　每侧 3 × 15 次
+侧卧屈膝，脚跟并拢，保持骨盆稳定打开上侧膝盖。</string>
+    <string name="office_plan_details">坐姿猫牛式　1 × 8 次
+坐在椅面前 1/3，双脚踩地；吸气抬头开胸，呼气含胸拱背。
+
+坐姿躯干扭转　左右各 15–20 秒
+骨盆和双膝朝前，呼气向一侧转动躯干，不要发猛力硬扭。
+
+坐姿“4”字拉伸　左右各 20–30 秒
+脚踝跨到对侧膝上，脊柱挺直，身体整体向前倾，感受臀部拉伸。
+
+靠墙/靠背胸椎伸展　1 × 45 秒
+双手抱头靠椅背，吸气打开胸腔，胸椎向上向后微伸展。</string>
+    <string name="piriformis_safety_note">只在无剧烈疼痛时练习。筋膜球应放在臀部肌肉丰满处，避开骨骼和剧烈麻木点；若出现下肢无力、麻木扩大或大小便感觉异常，请立即停止并就医。</string>
+    <string name="office_safety_note">每坐 45–60 分钟起身活动 3–5 分钟；双脚踩实，腰部可垫靠枕，避免翘二郎腿和瘫坐。出现明显不适请停止。</string>
+    <string name="piriformis_complete_summary">梨状肌康复训练已完成</string>
+    <string name="office_complete_summary">办公室腰臀放松已完成</string>
     <string name="rest_progress">休息 %1$d / %2$d</string>
     <string name="set_progress">第 %1$d / %2$d 组</string>
     <string name="set_progress_reps">第 %1$d / %2$d 组 · %3$d 次</string>

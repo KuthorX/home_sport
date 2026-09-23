@@ -21,6 +21,7 @@ class WorkoutService : Service(), TextToSpeech.OnInitListener {
     private val timer = Handler(Looper.getMainLooper())
     private lateinit var plan: WorkoutPlan
     private lateinit var store: WorkoutStore
+    private var mode = WorkoutPlan.Mode.DAILY
     private var engine: WorkoutEngine? = null
     private var lastTickAtMillis = 0L
     private var tts: TextToSpeech? = null
@@ -45,10 +46,10 @@ class WorkoutService : Service(), TextToSpeech.OnInitListener {
                 val completed = active.currentStep() ?: return@repeat
                 active.tick()
                 if (completed !== active.currentStep()) {
-                    store.completeStepAndSave(active, completed, LocalDate.now())
+                    store.completeStepAndSave(active, completed, LocalDate.now(), mode)
                 }
             }
-            store.saveProgress(active, false)
+            store.saveProgress(active, false, mode)
             lastTickAtMillis += elapsedSeconds * 1_000L
             broadcastState()
 
@@ -72,14 +73,18 @@ class WorkoutService : Service(), TextToSpeech.OnInitListener {
 
     override fun onCreate() {
         super.onCreate()
-        plan = WorkoutPlan.daily()
         store = WorkoutStore(this)
-        engine = store.restoreProgress(plan)
+        mode = store.restoreMode()
+        plan = WorkoutPlan.forMode(mode)
+        engine = store.restoreProgress(plan, mode)
         tts = TextToSpeech(this, this)
         createNotificationChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        intent?.getStringExtra(EXTRA_MODE)
+            ?.let(WorkoutPlan.Mode::fromId)
+            ?.let(::useMode)
         when (intent?.action) {
             ACTION_START -> startWorkout()
             ACTION_RESUME -> resumeWorkout()
@@ -114,7 +119,7 @@ class WorkoutService : Service(), TextToSpeech.OnInitListener {
     }
 
     private fun startWorkout() {
-        engine = WorkoutEngine(plan).also { store.saveProgress(it, true) }
+        engine = WorkoutEngine(plan).also { store.saveProgress(it, true, mode) }
         startForeground(NOTIFICATION_ID, notification())
         announceCurrentStep("训练开始。全程保持低冲击，如有胸闷、头晕或明显不适，请立即停止。")
         startTimer()
@@ -124,7 +129,7 @@ class WorkoutService : Service(), TextToSpeech.OnInitListener {
     private fun resumeWorkout() {
         val active = loadEngine() ?: return stopWorkout()
         active.resume()
-        store.saveProgress(active, true)
+        store.saveProgress(active, true, mode)
         startForeground(NOTIFICATION_ID, notification())
         speak("继续训练")
         startTimer()
@@ -134,7 +139,7 @@ class WorkoutService : Service(), TextToSpeech.OnInitListener {
     private fun pauseWorkout() {
         val active = loadEngine() ?: return stopWorkout()
         active.pause()
-        store.saveProgress(active, true)
+        store.saveProgress(active, true, mode)
         timer.removeCallbacks(tick)
         tts?.stop()
         startForeground(NOTIFICATION_ID, notification())
@@ -147,7 +152,7 @@ class WorkoutService : Service(), TextToSpeech.OnInitListener {
         startForeground(NOTIFICATION_ID, notification())
         tts?.stop()
         active.skip()
-        store.saveProgress(active, true)
+        store.saveProgress(active, true, mode)
         if (active.isComplete) {
             broadcastState()
             finishWorkout()
@@ -193,8 +198,15 @@ class WorkoutService : Service(), TextToSpeech.OnInitListener {
     }
 
     private fun loadEngine(): WorkoutEngine? {
-        if (engine == null) engine = store.restoreProgress(plan)
+        if (engine == null) engine = store.restoreProgress(plan, mode)
         return engine
+    }
+
+    private fun useMode(nextMode: WorkoutPlan.Mode) {
+        if (mode == nextMode) return
+        mode = nextMode
+        plan = WorkoutPlan.forMode(nextMode)
+        engine = null
     }
 
     private fun startTimer() {
@@ -215,7 +227,7 @@ class WorkoutService : Service(), TextToSpeech.OnInitListener {
             0,
             Intent(this, MainActivity::class.java).addFlags(
                 Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP,
-            ),
+            ).putExtra(EXTRA_MODE, mode.id),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
@@ -272,7 +284,9 @@ class WorkoutService : Service(), TextToSpeech.OnInitListener {
     private fun serviceIntent(action: String, requestCode: Int) = PendingIntent.getService(
         this,
         requestCode,
-        Intent(this, WorkoutService::class.java).setAction(action),
+        Intent(this, WorkoutService::class.java)
+            .setAction(action)
+            .putExtra(EXTRA_MODE, mode.id),
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
@@ -317,6 +331,7 @@ class WorkoutService : Service(), TextToSpeech.OnInitListener {
 
     companion object {
         const val ACTION_STATE_CHANGED = "io.kuthorx.github.home_sport.WORKOUT_STATE_CHANGED"
+        const val EXTRA_MODE = "workout_mode"
         private const val ACTION_START = "io.kuthorx.github.home_sport.START"
         private const val ACTION_RESUME = "io.kuthorx.github.home_sport.RESUME"
         private const val ACTION_PAUSE = "io.kuthorx.github.home_sport.PAUSE"
@@ -325,16 +340,37 @@ class WorkoutService : Service(), TextToSpeech.OnInitListener {
         private const val CHANNEL_ID = "workout_countdown"
         private const val NOTIFICATION_ID = 1001
 
-        fun start(context: Context) = send(context, ACTION_START)
-        fun resume(context: Context) = send(context, ACTION_RESUME)
-        fun pause(context: Context) = send(context, ACTION_PAUSE)
-        fun skip(context: Context) = send(context, ACTION_SKIP)
-        fun stop(context: Context) = send(context, ACTION_STOP)
+        fun start(
+            context: Context,
+            mode: WorkoutPlan.Mode = WorkoutPlan.Mode.DAILY,
+        ) = send(context, ACTION_START, mode)
 
-        private fun send(context: Context, action: String) {
+        fun resume(
+            context: Context,
+            mode: WorkoutPlan.Mode = WorkoutPlan.Mode.DAILY,
+        ) = send(context, ACTION_RESUME, mode)
+
+        fun pause(
+            context: Context,
+            mode: WorkoutPlan.Mode = WorkoutPlan.Mode.DAILY,
+        ) = send(context, ACTION_PAUSE, mode)
+
+        fun skip(
+            context: Context,
+            mode: WorkoutPlan.Mode = WorkoutPlan.Mode.DAILY,
+        ) = send(context, ACTION_SKIP, mode)
+
+        fun stop(
+            context: Context,
+            mode: WorkoutPlan.Mode = WorkoutPlan.Mode.DAILY,
+        ) = send(context, ACTION_STOP, mode)
+
+        private fun send(context: Context, action: String, mode: WorkoutPlan.Mode) {
             ContextCompat.startForegroundService(
                 context,
-                Intent(context, WorkoutService::class.java).setAction(action),
+                Intent(context, WorkoutService::class.java)
+                    .setAction(action)
+                    .putExtra(EXTRA_MODE, mode.id),
             )
         }
     }

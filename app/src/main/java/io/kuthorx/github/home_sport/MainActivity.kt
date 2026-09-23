@@ -21,6 +21,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var mode: WorkoutPlan.Mode
     private lateinit var plan: WorkoutPlan
     private var engine: WorkoutEngine? = null
     private lateinit var store: WorkoutStore
@@ -34,6 +35,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var countdown: TextView
     private lateinit var progressText: TextView
     private lateinit var exerciseGuide: TextView
+    private lateinit var planSummary: TextView
+    private lateinit var planTitle: TextView
+    private lateinit var planDetails: TextView
+    private lateinit var safetyNote: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var primaryButton: AppCompatButton
     private lateinit var secondaryActions: LinearLayout
@@ -48,13 +53,21 @@ class MainActivity : AppCompatActivity() {
         countdown = findViewById(R.id.countdown)
         progressText = findViewById(R.id.progressText)
         exerciseGuide = findViewById(R.id.exerciseGuide)
+        planSummary = findViewById(R.id.planSummary)
+        planTitle = findViewById(R.id.planTitle)
+        planDetails = findViewById(R.id.planDetails)
+        safetyNote = findViewById(R.id.safetyNote)
         progressBar = findViewById(R.id.progressBar)
         primaryButton = findViewById(R.id.primaryButton)
         secondaryActions = findViewById(R.id.secondaryActions)
 
-        plan = WorkoutPlan.daily()
         store = WorkoutStore(this)
+        mode = WorkoutPlan.Mode.fromId(intent.getStringExtra(EXTRA_MODE))
+            ?: store.restoreMode()
+        plan = WorkoutPlan.forMode(mode)
+        applyModeContent()
         requestNotificationPermission()
+        findViewById<View>(R.id.homeButton).setOnClickListener { finish() }
         primaryButton.setOnClickListener { onPrimaryAction() }
         findViewById<View>(R.id.skipButton).setOnClickListener { skipStep() }
         findViewById<View>(R.id.stopButton).setOnClickListener { confirmStop() }
@@ -70,7 +83,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun restoreStoredProgress(): Boolean {
-        engine = store.restoreProgress(plan) ?: return false
+        engine = store.restoreProgress(plan, mode) ?: return false
         showRestoredProgress()
         return true
     }
@@ -98,7 +111,7 @@ class MainActivity : AppCompatActivity() {
             secondaryActions.visibility = View.VISIBLE
             renderWorkout()
             if (!restored.isPaused) {
-                WorkoutService.resume(this)
+                WorkoutService.resume(this, mode)
                 window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             }
         }
@@ -110,8 +123,8 @@ class MainActivity : AppCompatActivity() {
             active == null || active.isComplete -> startWorkout()
             active.isPaused -> {
                 active.resume()
-                store.saveProgress(active, true)
-                WorkoutService.resume(this)
+                store.saveProgress(active, true, mode)
+                WorkoutService.resume(this, mode)
                 primaryButton.setText(R.string.pause_workout)
                 window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             }
@@ -121,20 +134,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startWorkout() {
-        engine = WorkoutEngine(plan).also { store.saveProgress(it, true) }
+        engine = WorkoutEngine(plan).also { store.saveProgress(it, true, mode) }
         secondaryActions.visibility = View.VISIBLE
         primaryButton.setText(R.string.pause_workout)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         renderWorkout()
-        WorkoutService.start(this)
+        WorkoutService.start(this, mode)
     }
 
     private fun pauseWorkout() {
         val active = engine ?: return
         if (active.isComplete || active.isPaused) return
         active.pause()
-        store.saveProgress(active, true)
-        WorkoutService.pause(this)
+        store.saveProgress(active, true, mode)
+        WorkoutService.pause(this, mode)
         primaryButton.setText(R.string.resume_workout)
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
@@ -142,7 +155,7 @@ class MainActivity : AppCompatActivity() {
     private fun skipStep() {
         val active = engine ?: return
         if (active.isComplete) return
-        WorkoutService.skip(this)
+        WorkoutService.skip(this, mode)
     }
 
     private fun confirmStop() {
@@ -157,7 +170,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun resetWorkout() {
-        WorkoutService.stop(this)
+        WorkoutService.stop(this, mode)
         store.clearProgress()
         engine = null
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -171,7 +184,17 @@ class MainActivity : AppCompatActivity() {
         phaseLabel.setText(if (completedAll) R.string.status_complete else R.string.status_finished)
         exerciseName.setText(if (completedAll) R.string.complete_title else R.string.partial_title)
         countdown.setText(R.string.complete_word)
-        progressText.setText(if (completedAll) R.string.complete_summary else R.string.partial_summary)
+        progressText.setText(
+            if (completedAll) {
+                when (mode) {
+                    WorkoutPlan.Mode.DAILY -> R.string.complete_summary
+                    WorkoutPlan.Mode.PIRIFORMIS -> R.string.piriformis_complete_summary
+                    WorkoutPlan.Mode.OFFICE -> R.string.office_complete_summary
+                }
+            } else {
+                R.string.partial_summary
+            },
+        )
         exerciseGuide.setText(if (completedAll) R.string.cool_down_guide else R.string.partial_guide)
         progressBar.progress = 100
         primaryButton.setText(R.string.repeat_workout)
@@ -180,10 +203,28 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderReady() {
         phaseLabel.setText(R.string.status_ready)
-        exerciseName.setText(R.string.todays_workout)
+        exerciseName.setText(
+            when (mode) {
+                WorkoutPlan.Mode.DAILY -> R.string.todays_workout
+                WorkoutPlan.Mode.PIRIFORMIS -> R.string.piriformis_workout
+                WorkoutPlan.Mode.OFFICE -> R.string.office_workout
+            },
+        )
         countdown.text = formatTime(totalDurationSeconds())
-        progressText.setText(R.string.ready_progress)
-        exerciseGuide.setText(R.string.ready_guide)
+        progressText.setText(
+            when (mode) {
+                WorkoutPlan.Mode.DAILY -> R.string.ready_progress
+                WorkoutPlan.Mode.PIRIFORMIS -> R.string.piriformis_ready_progress
+                WorkoutPlan.Mode.OFFICE -> R.string.office_ready_progress
+            },
+        )
+        exerciseGuide.setText(
+            when (mode) {
+                WorkoutPlan.Mode.DAILY -> R.string.ready_guide
+                WorkoutPlan.Mode.PIRIFORMIS -> R.string.piriformis_ready_guide
+                WorkoutPlan.Mode.OFFICE -> R.string.office_ready_guide
+            },
+        )
         progressBar.progress = 0
         primaryButton.setText(R.string.start_workout)
         secondaryActions.visibility = View.GONE
@@ -220,6 +261,29 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    private fun applyModeContent() {
+        when (mode) {
+            WorkoutPlan.Mode.DAILY -> {
+                planSummary.setText(R.string.plan_summary)
+                planTitle.setText(R.string.todays_exercises)
+                planDetails.setText(R.string.plan_details)
+                safetyNote.setText(R.string.safety_note)
+            }
+            WorkoutPlan.Mode.PIRIFORMIS -> {
+                planSummary.setText(R.string.piriformis_plan_summary)
+                planTitle.setText(R.string.piriformis_plan_title)
+                planDetails.setText(R.string.piriformis_plan_details)
+                safetyNote.setText(R.string.piriformis_safety_note)
+            }
+            WorkoutPlan.Mode.OFFICE -> {
+                planSummary.setText(R.string.office_plan_summary)
+                planTitle.setText(R.string.office_plan_title)
+                planDetails.setText(R.string.office_plan_details)
+                safetyNote.setText(R.string.office_safety_note)
+            }
+        }
+    }
+
     private fun overallProgress(): Int {
         val active = engine ?: return 0
         var elapsed = 0
@@ -251,7 +315,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshWorkout() {
-        engine = store.restoreProgress(plan)
+        engine = store.restoreProgress(plan, mode)
         val active = engine
         when {
             active == null -> renderReady()
@@ -297,6 +361,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        const val EXTRA_MODE = "workout_mode"
         private const val STATE_HAS_ENGINE = "has_engine"
         private const val STATE_STEP_INDEX = "step_index"
         private const val STATE_SECONDS = "seconds"

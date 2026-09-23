@@ -35,6 +35,10 @@
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize"
+            android:exported="false"
+            android:resizeableActivity="true" />
+        <activity
+            android:name=".HomeActivity"
             android:exported="true"
             android:resizeableActivity="true">
             <intent-filter>

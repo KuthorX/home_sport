@@ -16,9 +16,16 @@ class WorkoutStore(context: Context) {
     private val preferences: SharedPreferences = context.applicationContext
         .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun saveProgress(engine: WorkoutEngine, synchronous: Boolean) {
+    fun saveProgress(engine: WorkoutEngine, synchronous: Boolean) =
+        saveProgress(engine, synchronous, WorkoutPlan.Mode.DAILY)
+
+    fun saveProgress(
+        engine: WorkoutEngine,
+        synchronous: Boolean,
+        mode: WorkoutPlan.Mode,
+    ) {
         val editor = preferences.edit()
-            .putString(KEY_PROGRESS, progressJson(engine).toString())
+            .putString(KEY_PROGRESS, progressJson(engine, mode).toString())
         if (synchronous) editor.commit() else editor.apply()
     }
 
@@ -27,6 +34,14 @@ class WorkoutStore(context: Context) {
         engineAfter: WorkoutEngine,
         completedStep: WorkoutStep,
         date: LocalDate,
+    ) = completeStepAndSave(engineAfter, completedStep, date, WorkoutPlan.Mode.DAILY)
+
+    @Synchronized
+    fun completeStepAndSave(
+        engineAfter: WorkoutEngine,
+        completedStep: WorkoutStep,
+        date: LocalDate,
+        mode: WorkoutPlan.Mode,
     ) {
         val history = readHistory()
         val day = getOrCreateObject(history, date.toString())
@@ -38,31 +53,52 @@ class WorkoutStore(context: Context) {
         }
         put(history, date.toString(), day)
         preferences.edit()
-            .putString(KEY_PROGRESS, progressJson(engineAfter).toString())
+            .putString(KEY_PROGRESS, progressJson(engineAfter, mode).toString())
             .putString(KEY_HISTORY, history.toString())
             .commit()
     }
 
-    fun restoreProgress(plan: WorkoutPlan): WorkoutEngine? = try {
-        val saved = preferences.getString(KEY_PROGRESS, null) ?: return null
+    fun restoreProgress(plan: WorkoutPlan): WorkoutEngine? = restoreProgress(plan, plan.mode)
+
+    fun restoreProgress(plan: WorkoutPlan, mode: WorkoutPlan.Mode): WorkoutEngine? {
+        return try {
+            val saved = preferences.getString(KEY_PROGRESS, null) ?: return null
+            val value = JSONObject(saved)
+            val savedMode = WorkoutPlan.Mode.fromId(
+                if (value.has("mode")) value.getString("mode") else WorkoutPlan.Mode.DAILY.id,
+            ) ?: return null
+            if (savedMode != mode) return null
+            WorkoutEngine.restore(
+                plan,
+                value.getInt("stepIndex"),
+                value.getInt("secondsRemaining"),
+                value.getBoolean("paused"),
+                value.getBoolean("complete"),
+                value.optInt("skippedSteps", 0),
+            )
+        } catch (error: JSONException) {
+            clearProgress()
+            null
+        } catch (error: IllegalArgumentException) {
+            clearProgress()
+            null
+        } catch (error: ClassCastException) {
+            clearProgress()
+            null
+        }
+    }
+
+    fun restoreMode(): WorkoutPlan.Mode = try {
+        val saved = preferences.getString(KEY_PROGRESS, null)
+            ?: return WorkoutPlan.Mode.DAILY
         val value = JSONObject(saved)
-        WorkoutEngine.restore(
-            plan,
-            value.getInt("stepIndex"),
-            value.getInt("secondsRemaining"),
-            value.getBoolean("paused"),
-            value.getBoolean("complete"),
-            value.optInt("skippedSteps", 0),
-        )
-    } catch (error: JSONException) {
-        clearProgress()
-        null
-    } catch (error: IllegalArgumentException) {
-        clearProgress()
-        null
-    } catch (error: ClassCastException) {
-        clearProgress()
-        null
+        WorkoutPlan.Mode.fromId(
+            if (value.has("mode")) value.getString("mode") else WorkoutPlan.Mode.DAILY.id,
+        ) ?: WorkoutPlan.Mode.DAILY
+    } catch (_: JSONException) {
+        WorkoutPlan.Mode.DAILY
+    } catch (_: ClassCastException) {
+        WorkoutPlan.Mode.DAILY
     }
 
     fun clearProgress() {
@@ -189,12 +225,16 @@ class WorkoutStore(context: Context) {
         private const val KEY_PROGRESS = "progress"
         private const val KEY_HISTORY = "history"
 
-        private fun progressJson(engine: WorkoutEngine): JSONObject = JSONObject().also {
+        private fun progressJson(
+            engine: WorkoutEngine,
+            mode: WorkoutPlan.Mode,
+        ): JSONObject = JSONObject().also {
             put(it, "stepIndex", engine.stepIndex)
             put(it, "secondsRemaining", engine.secondsRemaining)
             put(it, "paused", engine.isPaused)
             put(it, "complete", engine.isComplete)
             put(it, "skippedSteps", engine.skippedSteps)
+            put(it, "mode", mode.id)
         }
 
         private fun addCompletedExercise(day: JSONObject, step: WorkoutStep) {
