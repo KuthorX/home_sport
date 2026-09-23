@@ -314,6 +314,15 @@ class MainActivity : AppCompatActivity() {
         refreshWorkout()
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        mode = WorkoutPlan.Mode.fromId(intent.getStringExtra(EXTRA_MODE)) ?: store.restoreMode()
+        plan = WorkoutPlan.forMode(mode)
+        applyModeContent()
+        refreshWorkout()
+    }
+
     private fun refreshWorkout() {
         engine = store.restoreProgress(plan, mode)
         val active = engine
